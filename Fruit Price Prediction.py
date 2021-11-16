@@ -1,29 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# # STEP #0: PROBLEM STATEMENT
-
-# - Data represents weekly 2018 retail scan data for National retail volume (units) and price. 
-# - Retail scan data comes directly from retailers’ cash registers based on actual retail sales of Hass avocados. 
-# - The Average Price (of avocados) in the table reflects a per unit (per avocado) cost, even when multiple units (avocados) are sold in bags. 
-# - The Product Lookup codes (PLU’s) in the table are only for Hass avocados. Other varieties of avocados (e.g. greenskins) are not included in this table.
-# 
-# Some relevant columns in the dataset:
-# 
-# - Date - The date of the observation
-# - AveragePrice - the average price of a single avocado
-# - type - conventional or organic
-# - year - the year
-# - Region - the city or region of the observation
-# - Total Volume - Total number of avocados sold
-# - 4046 - Total number of avocados with PLU 4046 sold
-# - 4225 - Total number of avocados with PLU 4225 sold
-# - 4770 - Total number of avocados with PLU 4770 sold
-# 
-# 
-
-# ![image.png](attachment:image.png)
-# Image Source: https://www.flickr.com/photos/30478819@N08/33063122713
 
 # # STEP #1: IMPORTING DATA
 
@@ -43,213 +17,283 @@
 # https://facebook.github.io/prophet/docs/quick_start.html#python-api
 # 
 
-# In[1]:
-
-
-# import libraries 
-import pandas as pd # Import Pandas for data manipulation using dataframes
-import numpy as np # Import Numpy for data statistical analysis 
-import matplotlib.pyplot as plt # Import matplotlib for data visualisation
-import random
-import seaborn as sns
-from fbprophet import Prophet
-
-
-# In[2]:
-
-
-# dataframes creation for both training and testing datasets 
-avocado_df = pd.read_csv('avocado.csv')
-
-
-# # STEP #2: EXPLORING THE DATASET  
-
 # In[3]:
 
 
-# Let's view the head of the training dataset
-avocado_df.head()
+import pandas as pd                   #for data manipulation using dataframes
+import numpy as np                    #for data statistical analysis 
+import matplotlib.pyplot as plt       #for data visualisation 
+import seaborn as sns                 #for data visualisation 
+from fbprophet import Prophet         #for future predictions
 
 
 # In[4]:
 
 
-# Let's view the last elements in the training dataset
-avocado_df.tail(20)
+df_avocado=pd.read_csv('avocado.csv')
 
 
 # In[5]:
 
 
-avocado_df = avocado_df.sort_values("Date")
+df_avocado
 
 
-# In[6]:
+# In[ ]:
 
 
-plt.figure(figsize=(10,10))
-plt.plot(avocado_df['Date'], avocado_df['AveragePrice'])
 
 
-# In[7]:
 
-
-avocado_df
-
+# # STEP #2: EXPLORING THE DATASET  
 
 # In[8]:
 
 
-# Bar Chart to indicate the number of regions 
-plt.figure(figsize=[25,12])
-sns.countplot(x = 'region', data = avocado_df)
-plt.xticks(rotation = 45)
+df_avocado.head()
 
 
 # In[9]:
 
 
-# Bar Chart to indicate the year
-plt.figure(figsize=[25,12])
-sns.countplot(x = 'year', data = avocado_df)
-plt.xticks(rotation = 45)
+df_avocado.tail()
 
+
+# ### Sorting values:
 
 # In[10]:
 
 
-avocado_prophet_df = avocado_df[['Date', 'AveragePrice']] 
+df_avocado=df_avocado.sort_values('Date')
 
 
 # In[11]:
 
 
-avocado_prophet_df
+df_avocado
+
+
+# In[ ]:
+
+
+
+
+
+# #### Let's see if we have null values:
+
+# In[7]:
+
+
+plt.figure(figsize=(10,10))
+sns.heatmap(df_avocado.isnull(), cbar=False, cmap='YlGnBu')
+
+
+# ### Plot the price vs date:
+
+# In[16]:
+
+
+plt.figure(figsize=(20,10))
+plt.plot(df_avocado['Date'], df_avocado['AveragePrice'])
+
+
+# ### Visualise the count of each region:
+
+# In[22]:
+
+
+plt.figure(figsize=(20,10))
+sns.countplot(x='region', data=df_avocado)  # We count the elements based on the region
+
+
+# #### As you see, it is really hard to read X labels, lets rotate them:
+
+# In[28]:
+
+
+plt.figure(figsize=(20,10))
+sns.countplot(x='region', data=df_avocado)  # We count the elements based on the region
+plt.xticks(rotation=45)
+
+
+# In[34]:
+
+
+sns.countplot(x='year', data=df_avocado)  # We count the elements based on the region
+
+
+# ### Prepare data for Prophet
+# #### We need date and average price
+
+# In[41]:
+
+
+df_avocado_prophet=df_avocado[['Date','AveragePrice']]
+
+
+# In[42]:
+
+
+df_avocado_prophet
 
 
 # # STEP 3: MAKE PREDICTIONS
 
-# In[12]:
+# In[50]:
 
 
-avocado_prophet_df = avocado_prophet_df.rename(columns={'Date':'ds', 'AveragePrice':'y'})
+df_avocado_prophet=df_avocado_prophet.rename(columns={'Date':'ds', 'Averageprice':"y"})
+#We do this renaming because Prophet uses "ds" for x-axis and "y" for y-axis
 
 
-# In[13]:
+# In[51]:
 
 
-avocado_prophet_df
+df_avocado_prophet
 
 
-# In[14]:
+# In[53]:
 
 
-m = Prophet()
-m.fit(avocado_prophet_df)
+model=Prophet()
+model.fit(df_avocado_prophet)
 
 
-# In[15]:
+# In[55]:
 
 
-# Forcasting into the future
-future = m.make_future_dataframe(periods=365)
-forecast = m.predict(future)
+future=model.make_future_dataframe(periods=365)
 
 
-# In[16]:
+# In[56]:
+
+
+forecast=model.predict(future)
+
+
+# In[57]:
 
 
 forecast
 
 
-# In[17]:
+# In[59]:
 
 
-figure = m.plot(forecast, xlabel='Date', ylabel='Price')
+figure=model.plot(forecast, xlabel='Date', ylabel='Average Price')
 
 
-# In[18]:
+# In[60]:
 
 
-figure3 = m.plot_components(forecast)
+figure=model.plot_components(forecast)
 
 
-# # PART 2
-
-# In[19]:
+# In[ ]:
 
 
-# dataframes creation for both training and testing datasets 
-avocado_df = pd.read_csv('avocado.csv')
 
 
-# In[20]:
+
+# ## Predict for a specific region:
+
+# In[64]:
 
 
-avocado_df
+df_avocado_west=df_avocado[df_avocado['region']=='West']
 
 
-# In[21]:
+# In[65]:
 
 
-avocado_df_sample = avocado_df[avocado_df['region']=='West']
+df_avocado_west=df_avocado_west.sort_values('Date')
 
 
-# In[22]:
+# In[66]:
 
 
-avocado_df_sample
+df_avocado_west
 
 
-# In[23]:
+# In[67]:
 
 
-avocado_df_sample
+plt.plot(df_avocado_west['Date'], df_avocado_west['AveragePrice'])
 
 
-# In[24]:
+# In[68]:
 
 
-avocado_df_sample = avocado_df_sample.sort_values("Date")
+df_avocado_west=df_avocado_west.rename(columns={'Date':'ds', 'AveragePrice':'y'})
 
 
-# In[25]:
+# In[69]:
 
 
-avocado_df_sample
+df_avocado_west_prophet=df_avocado_west[['ds','y']]
 
 
-# In[26]:
+# In[70]:
 
 
-plt.figure(figsize=(10,10))
-plt.plot(avocado_df_sample['Date'], avocado_df_sample['AveragePrice'])
+df_avocado_west_prophet
 
 
-# In[27]:
+# In[71]:
 
 
-avocado_df_sample = avocado_df_sample.rename(columns={'Date':'ds', 'AveragePrice':'y'})
+model_west=Prophet()
 
 
-# In[28]:
+# In[73]:
 
 
-m = Prophet()
-m.fit(avocado_df_sample)
-# Forcasting into the future
-future = m.make_future_dataframe(periods=365)
-forecast = m.predict(future)
+model_west.fit(df_avocado_west_prophet)
 
 
-# In[29]:
+# In[74]:
 
 
-figure = m.plot(forecast, xlabel='Date', ylabel='Price')
+future_west=model.make_future_dataframe(periods=365)
 
 
-# In[30]:
+# In[75]:
 
 
-figure3 = m.plot_components(forecast)
+predict_west=model_west.predict(future_west)
+
+
+# In[79]:
+
+
+figure_west=model_west.plot(predict_west, xlabel='Date', ylabel='Average Price')
+
+
+# In[80]:
+
+
+figure_west_trend=model_west.plot_components(predict_west)
+
+
+# In[ ]:
+
+
+
+
+
+# ### Thanks!
+# 
+# If you have any question please feel free to contact with me:
+# * github.com/EmrahYener
+# * linkedin.com/in/emrah-yener
+# * xing.com/profile/emrah_yener
+# 
+# Sources:
+# * https://www.udemy.com/course/deep-learning-machine-learning-practical/
+# 
+# 
+
+# In[ ]:
+
+
 
